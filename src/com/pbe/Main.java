@@ -1,5 +1,10 @@
 package com.pbe;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 /** Study on Databases
  * Following Udemy Java programming masterclass for software developers Tim Buchalka.
  @author Pieter Beernink
@@ -251,9 +256,127 @@ package com.pbe;
 //    INNER JOIN artists ON albums.artist = artists._id
 //    WHERE artists.name = "Aerosmith";
 
+// *********************
+// Using JDBC (Java Database Connectivity)
+// *********************
+// Using JDBC allows to work not only with databases, but also spreadsheets and flat files.
+// JDBC acts as a middleman between a JAva application and a data source.
+// To use a particular data source from an application, a suitable JDBC driver for that data source is required.
+// For example for a SQLite database, an SQLite JDBC driver is required.
+//
+// Such driver is simply a Java library containing classes that implements the JDBC API.
+// All JDBC drivers implement the same interfaces. This makes it easy to change the data source an application uses.
+// For example changing from using a SQLite database to MySQL, requires the use of the MySQL JDBC driver instead.
+// And of course migrating the data. 100% portability is never the case however.
+// But when writing JDBC code, avoiding the use of database-specific SQL and behaviour, makes a possible future change easier.
+//
+// A JDBC driver has to be written in Java, but it can consist of a thin Java layer that calls code in other languages.
+//
+// For backwards compatibility, the JDBC API contains all methods that were in previous JDBC versions.
+//
+// JDBC consists of 2 packages:
+// 1. Core JDBC: java.sql
+// 2. Optional JDBC: javax.sql
+// APIs in the javax.sql package are required when working with database servers.
+//
+// All popular databases provide JDBC drivers. The JDK ships with a database called 'derby'.
+// Derby can be used for desktop applications or when prototyping. The Derby JDBC driver is included in the JDK.
+//
+// SQLite browser can be used as graphical interface to view and administrate databases.
+// When opening a database in the SQLite browser.. don't forget to close when finished.
+// Otherwise the Java application that uses the database, won't be able to establish a connection.
+//
+// SQLite-JDBC driver: https://github.com/xerial/sqlite-jdbc
+// SQLite browser: https://sqlitebrowser.org/
+//
+// To use SQLite in Java project:
+// 1. Add SQLite JDBC driver to the project:
+//    File -> Project Structure -> Libraries -> + button (new project library) and select Java
+//    Finally, select the driver (.jar file) and confirm OK as module.
+//    It will then show as library and be accessible by the application.
+//
+// 2. Create a database:
+//    Have to try and connect. If it doesn't exist, SQLite will create it.
+//    JDBC drivers need a connection string to connect to the database.
+//    The exact format of the connection string will vary between the various types of databases.
+//    One thing it has in common, is that it always starts with JDBC:
+//    Other databases might require additional information, such as a username and password.
+//    It's also possible to specify database attributes with the connection string.
+//    For example, to specify that the SQLight database should be stored in memory.
+//    To find out what's required for a certain database JDBC connection string: check documentation.
+//
+//    For SQLite:
+//    To access a locally stored database on D drive:
+//      - Connection conn = DriverManager.getConnection("jdbc:sqlite:D:\\databases\\testjava.db");
+//
+// 3. Establishing a connection with the database
+//    A connection can be setup in 2 manners:
+//      1. Using the driver manager
+//      As just shown with the connection string.
+//      2. Using datasource objects
+//      Allows for advanced features like connection polling and distributed transactions.
+//      It is also more portable, because of how the connections are established.
+//      These features however are not relevant when using SQLite.
+//      And they require the database administrator to enable these features.
+//      It's also more complicated to use datasource objects and really only relevant
+//      when working with Enterprise applications.
+//
+// 4. Create context table
+//    Whenever you want to use SQL with JDBC, statement objects are used.
+//    To create a table, connection.create statement method must be called.
+//    And then use the statement.execute method to run a SQL statement.
+//      - Statement statement = conn.createStatement();
+//      - statement.execute("CREATE TABLE contacts (name TEXT, phone INTEGER, email TEXT)");
+
 public class Main {
 
     public static void main(String[] args) {
-	// write your code here
+
+//        // Use try with resources connection, making sure the resource will be closed when the try-catch block is exited
+//        // Create a connection string and then a statement instance
+//        try(Connection conn = DriverManager.getConnection("jdbc:sqlite:C:\\Coding\\Java Projects\\Java Masterclass\\Databases\\testjava.db");
+//            Statement statement = conn.createStatement())
+//        {
+//            // Call execute method on statement instance to create a table by passing a SQL CREATE TABLE command
+//            // Note that NO ; sign needs to be included to end the statement, because the driver understands
+//            // that when execute is called, a complete statement is passed.
+//            // Also note that statement is connected to the database when the connection instance was created.
+//            // This means that the statement as such is connected with the statement and can only be run at that database.
+//            statement.execute("CREATE TABLE contacts (name TEXT, phone INTEGER, email TEXT)");
+//        } catch (SQLException e) {
+//            // If the JDBC driver is not added to the project this will cause an exception
+//            System.out.println("Something went wrong: " + e.getMessage());
+//        }
+
+
+        try {
+            // Create a connection string
+            // If the database doesn't exist at the given location, SQLite will create it
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:C:\\Coding\\Java Projects\\Java Masterclass\\Databases\\testjava.db");
+
+            // Create statement instance
+            Statement statement = conn.createStatement();
+
+            // Call execute method on statement instance to create a table by passing a SQL CREATE TABLE command
+            // Note that NO ; sign needs to be included to end the statement, because the driver understands
+            // that when execute is called, a complete statement is passed.
+            // Also note that statement is connected to the database when the connection instance was created.
+            // This means that the statement as such is connected with the statement and can only be run at that database.
+            statement.execute("CREATE TABLE contacts (name TEXT, phone INTEGER, email TEXT)");
+
+            // First close any statement instances
+            // Then close the connection
+            // Note that if you would close the connection first.. the statement instance couldn't be closed anymore
+            statement.close();
+            conn.close();
+
+        } catch (SQLException e) {
+
+            // If the JDBC driver is not added to the project this will cause an exception
+            System.out.println("Something went wrong: " + e.getMessage());
+
+        }
+
+
     }
 }
