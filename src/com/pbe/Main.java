@@ -57,6 +57,13 @@ package com.pbe;
 //   different from other databases like MS SQL server where you would have to set a column to autoincrement.
 // - Joining tables in SQLite can be done with the command JOIN, which is a shorter alternative for INNER JOIN
 //   It is however recommended to use INNER JOIN, as that's a more commonly use command (with other databases).
+// - Note that it's possible to run a long command over multiple lines. SQLite will look for the ending ; to know when the command ends.
+// - Major service client databases have stored procedures to store SQL procedures and execute them when needed.
+//   SQLite does not have stored procedures. Reason for this is that SQLite is intended to be embedded in programs.
+//   Rather than having a remote machine database that's connected to, to receive data.
+// - SQLite views are read only, meaning they can be modified with INSERT/DELETE/UPDATE statements
+//   to update data in the base tables through the view.
+
 
 // SQLite (command line) commands:
 // - To start: sqlite
@@ -83,6 +90,7 @@ package com.pbe;
 //      - SELECT * FROM albums ORDER BY name COLLATE NOCASE; // will ignore case in ordering
 //      - SELECT * FROM albums ORDER BY name COLLATE NOCASE DESC; // descending order
 //      - SELECT * FROM albums ORDER BY artist, name COLLATE NOCASE; // sorting first by artist id, then album name
+//  NOTE: see below examples of returning multiple columns. You're free to return columns in any order.
 //
 // - Updating an entry:
 //      - UPDATE contacts SET email="name@provider.com";
@@ -94,8 +102,68 @@ package com.pbe;
 //      - SELECT songs.track, songs.title, albums.name FROM songs JOIN albums ON songs.album = albums._id; // but it's a good habit to specify the table name, especially in code
 //      - SELECT songs.track, songs.title, albums.name FROM songs INNER JOIN albums ON songs.album = albums._id; // the ON part tells which album columns are part of the join
 //      - SELECT songs.track, songs.title, albums.name FROM songs INNER JOIN albums ON songs.album = albums._id ORDER BY albums.name, songs.track; // the join can be followed by an ORDER BY command
-//   NOTE: JOIN is a shortcut for INNER JOIN. It's recommended to use INNER JOIN, as that's more common (with other databases).
+//      - SELECT artists.name, albums.name FROM artists INNER JOIN albums ON artists._id = albums.artist ORDER BY artists.name;
+//      - SELECT artists.name, albums.name FROM albums INNER JOIN artists ON albums.artist = artists._id ORDER BY artists.name;\
 //
+//    Inner joins can also be chained. See example below.
+//      - SELECT artists.name, albums.name, songs.track, songs.title FROM songs
+//        INNER JOIN albums ON songs.album = albums._id
+//        INNER JOIN artists ON albums.artist = artists._id
+//        ORDER BY artists.name, albums.name, songs.track;
+//      - SELECT artists.name, albums.name, songs.track, songs.title FROM songs
+//        INNER JOIN albums ON songs.album = albums._id
+//        INNER JOIN artists ON albums.artist = artists._id
+//        WHERE albums._id = 19
+//        ORDER BY artists.name, albums.name, songs.track;
+//
+//   NOTES on joining tables:
+//   - JOIN is a shortcut for INNER JOIN. It's recommended to use INNER JOIN, as that's more common (with other databases).
+//   - It's possible to 'chain' multiple inner joins.
+//
+// - Using wildcards
+//   Use the LIKE operator in the WHERE clause to query data based on partial information.
+//   Do so in combination with the wildcard % to match any sequence of zero or more characters
+//   And the wildcard _ to match any single character. For example:
+//      - LIKE WHERE songs.title LIKE "%doctor%"
+//      - LIKE WHERE albums.artist LIKE "Jefferson%"
+//
+// - Using views
+//   A view is a result set of a stored query. It's a way to pack a query into a named object stored in the database.
+//   A view can be used on one or more (joined) tables. Data of the underlying table(s) can be accessed through the view.
+//   The tables that the query in the view definition refers to are called 'base tables'.
+//   A view is useful to:
+//   1. Provide an abstraction layer over tables, allowing to add/remove columns in the view without touching the schema of the underlying tables.
+//   2. To encapsulate complex queries with joins to simplify the data access.
+//   3. Offering security benefits. Via a view the (filtered) contents of a database can be viewed, but not modified.
+//   Note that, in SQLite, you can't modify data (update, delete, insert) in a view.
+//
+//   To create a view:
+//      - CREATE VIEW artists_list AS
+//        SELECT artists.name, albums.name, songs.track, songs.title FROM songs
+//        INNER JOIN albums ON songs.album = albums._id
+//        INNER JOIN artists ON albums.artist = artists._id
+//        ORDER BY artists.name, albums.name, songs.track;
+//
+//  When having created a list in SQLite, it will show under the .schema command.
+//  To run a view:
+//      - SELECT * FROM artists_list;
+//
+//  When having run a view, it's possible to filter the results, as if it was a table. For example:
+//      - SELECT * FROM artists_list WHERE name LIKE "jefferson%";
+//
+//  Existing views cannot be overwritten. To delete one:
+//      - DROP VIEW artists_list; // artists_list is the view name
+//      - DROP VIEW IF EXISTS artists_list; // to delete, only if the scheme exists
+//
+//  Create a view with different column headers:
+//  Use the command AS to given a certain field a different name.
+//      - CREATE VIEW artists_list AS
+//        SELECT artists.name AS artist, albums.name AS album, songs.track, songs.title FROM songs
+//        INNER JOIN albums ON songs.album = albums._id
+//        INNER JOIN artists ON albums.artist = artists._id
+//        ORDER BY artists.name, albums.name, songs.track;
+//  NOTE: you can now run a SELECT statement using these new column header names.
+
 // - Deleting an entry:
 //      - DELETE FROM contacts WHERE phone=1234;
 //
