@@ -92,6 +92,13 @@ package com.pbe;
 //      - SELECT * FROM albums ORDER BY artist, name COLLATE NOCASE; // sorting first by artist id, then album name
 //  NOTE: see below examples of returning multiple columns. You're free to return columns in any order.
 //
+//
+// - Preventing duplicates
+//   The DISTINCT clause is an optional clause of the  SELECT statement.
+//   The DISTINCT clause allows you to remove the duplicate rows in the result set.
+//   For example:
+//      -
+//
 // - Updating an entry:
 //      - UPDATE contacts SET email="name@provider.com";
 //      Note: be very careful with commands like this, 'accidentally' updating thousands of records instead of a specific one.
@@ -120,13 +127,23 @@ package com.pbe;
 //   - JOIN is a shortcut for INNER JOIN. It's recommended to use INNER JOIN, as that's more common (with other databases).
 //   - It's possible to 'chain' multiple inner joins.
 //
-// - Using wildcards
+// - Using wildcards (https://www.sqlite.org/lang_expr.html)
 //   Use the LIKE operator in the WHERE clause to query data based on partial information.
 //   Do so in combination with the wildcard % to match any sequence of zero or more characters
 //   And the wildcard _ to match any single character. For example:
 //      - LIKE WHERE songs.title LIKE "%doctor%"
 //      - LIKE WHERE albums.artist LIKE "Jefferson%"
 //
+//  - Using operators (https://www.sqlite.org/lang_expr.html)
+//  SQLite comparison operators are similar to Java operators. For example:
+//      - Equals can either be: = or ==
+//        Alternatively: IS (note that if an operator value is NULL, this influences the evaluation)
+//      - Non-equals can either be: != or <>
+//        Alternatively: IS NOT (note that if an operator value is NULL, this influences the evaluation)
+//      - Concatenate, joining two strings of its operands: ||
+//      - Casting type to INTEGER and computing the remainder: %
+//      - Between: >= and <=
+
 // - Using views
 //   A view is a result set of a stored query. It's a way to pack a query into a named object stored in the database.
 //   A view can be used on one or more (joined) tables. Data of the underlying table(s) can be accessed through the view.
@@ -165,23 +182,74 @@ package com.pbe;
 //  NOTE: you can now run a SELECT statement using these new column header names.
 
 // - Deleting an entry:
-//      - DELETE FROM contacts WHERE phone=1234;
+//      - DELETE FROM contacts WHERE phone = 1234;
+//      - DELETE FROM songs WHERE track < 50;
+//      - DELETE FROM songs WHERE track <> 71; // <> means 'not equal to'
+//
+// - Counting records:
+//      - SELECT count(*) FROM songs;
 //
 // - Making a backup:
 //      - .backup contacts.db filename
 //      - .backup filename
 //      Note: if no database is specified, it will use the current database
 //
-// - Restoring a backup: .restore filename
+//  SQLite commands:
+//      - Restoring a backup: .restore filename
+//      - Show all tables: .tables
+//      - Show table scheme: .schema
+//      - Show all SQL statements to create a table and its contents (a 'transaction'): .dump
+//      - Switching table headers on/off: .headers on
 //
-// - Show all tables: .tables
-// - Show table scheme: .schema
-// - Show all SQL statements to create a table and its contents (a 'transaction'): .dump
-// - Switching table headers on/off: .headers on
+//   NOTES on SQLite commands:
+//      - SQLite commands do not have to be ended with ;
+//      - If a command works, no feedback is given. It a command doesn't work, sqlite will give an error.
+//      - Use of lowercase, uppercase does not influence sqlite. But it's common use to use uppercase for SQL commands.
+
+// Practice example queries
+// 1. All titles from album 'Forbidden':
+//  - SELECT songs.title FROM songs INNER JOIN albums ON songs.album = albums._id WHERE albums.name = "Forbidden";
 //
-// NOTES on commands:
-// - If a command works, no feedback is given. It a command doesn't work, sqlite will give an error.
-// - Use of lowercase, uppercase does not influence sqlite. But it's common use to use uppercase for SQL commands.
+// 2. All titles from album 'Forbidden', in track order (including track number to see order):
+//  - SELECT songs.track, songs.title FROM songs INNER JOIN albums ON songs.album = albums._id WHERE albums.name = "Forbidden" ORDER BY songs.track;
+//
+// 3. All songs from Deep Purple:
+// - SELECT songs.title FROM songs INNER JOIN albums ON songs.album = albums._id INNER JOIN artists ON albums.artist = artists._id WHERE artists.name = "Deep Purple";
+//
+// 4. Renaming band "Mehitable" to "One Kitten":
+// - UPDATE artists SET name="One Kitten" WHERE name="Mehitabel";
+//
+// 5. Checking for correct renaming
+// - SELECT * FROM artists WHERE artists.name="Mehitabel";
+//
+// 6. Titles of all songs by Aerosmith in alphabetic order, including only the title in the output.
+//  - SELECT artists.name, songs.title, albums.name FROM songs
+//    INNER JOIN albums ON songs.album = albums._id
+//    INNER JOIN artists ON albums.artist = artists._id
+//    WHERE artists.name = "Aerosmith"
+//    ORDER BY songs.title ASC;
+//
+// 7. Replacing the column as used just now, with count(title) to get a count of the number of songs.
+//  - SELECT count(songs.title), artists.name, albums.name FROM songs INNER JOIN albums ON songs.album = albums._id
+//    INNER JOIN artists ON albums.artist = artists._id
+//    WHERE artists.name = "Aerosmith"
+//    ORDER BY songs.title ASC;
+//
+// 8. Getting a list of the songs from 6, without duplicates.
+//  - SELECT DISTINCT songs.title, artists.name, albums.name FROM songs INNER JOIN albums ON songs.album = albums._id
+//    INNER JOIN artists ON albums.artist = artists._id
+//    WHERE artists.name = "Aerosmith"
+//    ORDER BY songs.title ASC;
+//
+// 9. Getting a count of the songs without duplicates.
+//  - SELECT count(DISTINCT songs.title), artists.name FROM songs INNER JOIN albums ON songs.album = albums._id
+//    INNER JOIN artists ON albums.artist = artists._id
+//    WHERE artists.name = "Aerosmith";
+//
+// 10. Find the number of artists and the number of albums.
+//  - SELECT count(DISTINCT album), artists.name FROM songs INNER JOIN albums ON songs.album = albums._id
+//    INNER JOIN artists ON albums.artist = artists._id
+//    WHERE artists.name = "Aerosmith";
 
 public class Main {
 
