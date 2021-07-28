@@ -1,9 +1,6 @@
 package com.pbe;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 /** Study on Databases
  * Following Udemy Java programming masterclass for software developers Tim Buchalka.
@@ -68,7 +65,6 @@ import java.sql.Statement;
 //   Rather than having a remote machine database that's connected to, to receive data.
 // - SQLite views are read only, meaning they can be modified with INSERT/DELETE/UPDATE statements
 //   to update data in the base tables through the view.
-
 
 // SQLite (command line) commands:
 // - To start: sqlite
@@ -260,7 +256,7 @@ import java.sql.Statement;
 // Using JDBC (Java Database Connectivity)
 // *********************
 // Using JDBC allows to work not only with databases, but also spreadsheets and flat files.
-// JDBC acts as a middleman between a JAva application and a data source.
+// JDBC acts as a middleman between a Java application and a data source.
 // To use a particular data source from an application, a suitable JDBC driver for that data source is required.
 // For example for a SQLite database, an SQLite JDBC driver is required.
 //
@@ -283,8 +279,6 @@ import java.sql.Statement;
 // Derby can be used for desktop applications or when prototyping. The Derby JDBC driver is included in the JDK.
 //
 // SQLite browser can be used as graphical interface to view and administrate databases.
-// When opening a database in the SQLite browser.. don't forget to close when finished.
-// Otherwise the Java application that uses the database, won't be able to establish a connection.
 //
 // SQLite-JDBC driver: https://github.com/xerial/sqlite-jdbc
 // SQLite browser: https://sqlitebrowser.org/
@@ -328,7 +322,40 @@ import java.sql.Statement;
 //      - Statement statement = conn.createStatement();
 //      - statement.execute("CREATE TABLE contacts (name TEXT, phone INTEGER, email TEXT)");
 
+// Retrieve data with JDBC
+// When retrieving data with JDBC, this will return a boolean. That is:
+// - true if the executed statement returns an instance of the results set class
+// - false if it returns an update count or no results
+
+// ResultSet
+// When querying a database, the method returns the records that match the query, as a ResultSet instance.
+// The results can be retrieved by calling the .getResultSet method.
+// It's then possible to loop through the results.
+//
+// If you reuse a statement object to do a query, any ResultsSet associated with that statement object
+// is closed and a new one is created for the new query.
+// So when working with several results set queries at the same time,
+// it's imperative to use a different statement instance for each query.
+// It's possible to reuse a statement instance.. but only when finishing processing one query, before executing the next.
+// A statement object can ultimately only have on active ResultSet associated with it.
+//
+// Every ResultsSet has 'a cursor'.
+// When a ResultSet is created, it's cursor is positioned before the first record.
+// The first time calling ResultSet, the cursor will be moved to the first record.
+// When calling it again, it will move to the second record in the ResultSet.
+// When there are no more records,the next method record will return false.
+//
+// ResultSet is a resource and should be closed!
+
 public class Main {
+
+    // Set constants for the database
+    public static final String DB_NAME = "testjava.db";
+    public static final String CONNECTION_STRING = "jdbc:sqlite:C:\\Coding\\Java Projects\\Java Masterclass\\Databases\\" + DB_NAME;
+    public static final String TABLE_CONTACTS = "contacts"; // table name
+    public static final String COLUMN_NAME = "name";
+    public static final String COLUMN_PHONE = "phone";
+    public static final String COLUMN_EMAIL = "email";
 
     public static void main(String[] args) {
 
@@ -348,11 +375,11 @@ public class Main {
 //            System.out.println("Something went wrong: " + e.getMessage());
 //        }
 
-
         try {
             // Create a connection string
             // If the database doesn't exist at the given location, SQLite will create it
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:C:\\Coding\\Java Projects\\Java Masterclass\\Databases\\testjava.db");
+            Connection conn = DriverManager.getConnection(CONNECTION_STRING);
+//            conn.setAutoCommit(false);
 
             // Create statement instance
             Statement statement = conn.createStatement();
@@ -362,7 +389,60 @@ public class Main {
             // that when execute is called, a complete statement is passed.
             // Also note that statement is connected to the database when the connection instance was created.
             // This means that the statement as such is connected with the statement and can only be run at that database.
-            statement.execute("CREATE TABLE contacts (name TEXT, phone INTEGER, email TEXT)");
+            // Table will be created only, if not yet existing by use of "IF NOT EXISTS"
+            statement.execute("DROP TABLE IF EXISTS " + TABLE_CONTACTS);
+            statement.execute("CREATE TABLE IF NOT EXISTS " + TABLE_CONTACTS +
+                    "(" + COLUMN_NAME + " text, "
+                        + COLUMN_PHONE + " integer, "
+                        + COLUMN_EMAIL + " text)");
+
+            // Insert a record
+            // Note that changes are automatically committed to the database by the JDBC connection class
+            // immediately after a statement is executed (this can be turned of with: conn.setAutoCommit(false);)
+            // This is not the case with all types of databases. Some need to be explicitly instructed to commit
+            // in order for the data to persist. In such cases, closing the connection before committing would result
+            // in loss of the data.
+//            statement.execute("INSERT INTO contacts (name, phone, email)" +
+//                    "VALUES('PB', 123456789, 'pb@provides.com')");
+//            statement.execute("INSERT INTO contacts (name, phone, email)" +
+//                    "VALUES('Joe', 56564654, 'joe@regular.com')");
+//            statement.execute("INSERT INTO contacts (name, phone, email)" +
+//                    "VALUES('Leon', 7897887, 'leon@hitman.com')");
+//            statement.execute("INSERT INTO contacts (name, phone, email)" +
+//                    "VALUES('John', 999787, 'john@white.com')");
+
+            insertContact(statement, "PB", 123456789, "pb@provides.com");
+            insertContact(statement, "Joe", 56564654, "joe@regular.com");
+            insertContact(statement, "Leon", 7897887, "leon@hitman.com");
+
+            // Update a record
+//            statement.execute("UPDATE contacts SET phone=1234 WHERE name='John'");
+
+            statement.execute("UPDATE " + TABLE_CONTACTS + " SET " +
+                    COLUMN_PHONE + "=1234" +
+                    " WHERE " + COLUMN_NAME + "='John'");
+
+            // Delete a record
+//            statement.execute("DELETE FROM contacts WHERE name='John'");
+            statement.execute("DELETE FROM " + TABLE_CONTACTS +
+                    " WHERE " + COLUMN_NAME + "='John'");
+
+            // Retrieve all data
+            // This will return a boolean, that is:
+            // - true if the executed statement returns an instance of the results set class
+            // - false if it returns an update count or no results
+            // When querying a database, the method returns the records that match the query, as a ResultSet instance.
+            // The results can be retrieved by calling the .getResultSet method.
+            // It's then possible to loop through the results.
+//            statement.execute("SELECT * FROM contacts");
+//            ResultSet results = statement.getResultSet();
+            ResultSet results = statement.executeQuery("SELECT * FROM " + TABLE_CONTACTS); // shorter solution
+            while (results.next()) {
+                System.out.println(results.getString(COLUMN_NAME) + " " +
+                        results.getInt(COLUMN_PHONE) + " " +
+                        results.getString(COLUMN_EMAIL));
+            }
+            results.close();
 
             // First close any statement instances
             // Then close the connection
@@ -374,9 +454,17 @@ public class Main {
 
             // If the JDBC driver is not added to the project this will cause an exception
             System.out.println("Something went wrong: " + e.getMessage());
-
+            e.printStackTrace();
         }
 
+    }
 
+    private static void insertContact(Statement statement, String name, int phone, String email) throws SQLException {
+        statement.execute("INSERT INTO " + TABLE_CONTACTS +
+                " (" + COLUMN_NAME + ", " +
+                COLUMN_PHONE + ", " +
+                COLUMN_EMAIL +
+                ") " +
+                "VALUES('" + name + "', " + phone + ", '" + email + "')");
     }
 }
