@@ -12,6 +12,8 @@ import java.sql.*;
 // *********************
 // Databases
 // *********************
+// JDBC: https://docs.oracle.com/javase/tutorial/jdbc/basics/index.html
+//
 // Terminology
 // - Database: container for storage, for all data stored; referring to the entire data, structure, queries
 // Note that SQLite stores all entire data in a single file, which is normally uncommon for a database
@@ -316,36 +318,86 @@ import java.sql.*;
 //      when working with Enterprise applications.
 //
 // 4. Create context table
-//    Whenever you want to use SQL with JDBC, statement objects are used.
-//    To create a table, connection.create statement method must be called.
-//    And then use the statement.execute method to run a SQL statement.
+//    To create a context table, connection.create statement method must be called.
+//    And then use the statement.execute method to run an SQL statement.
 //      - Statement statement = conn.createStatement();
 //      - statement.execute("CREATE TABLE contacts (name TEXT, phone INTEGER, email TEXT)");
 
-// Retrieve data with JDBC
-// When retrieving data with JDBC, this will return a boolean. That is:
-// - true if the executed statement returns an instance of the results set class
-// - false if it returns an update count or no results
+// JDBC Statement objects
+// Whenever you want to use SQL with JDBC, 'Statement' objects are used.
+// Statement is an interface that represents an SQL statement.
+// When a Statement objects is executed, it generates a ResultSet object,
+// which is a table of data representing a database result set.
+// A Connection object is needed to create a Statement object.
+//
+// There are 3 kinds of statements:
+// 1. Statement: to implement simple SQL statements with no parameters
+// 2. PreparedStatement (extends Statement): for pre-compiling SQL statements that might contain input parameters
+// 3. CallableStatement (extends PreparedStatement): to execute stored procedures that may contain both input- and output parameters
 
-// ResultSet
+// Executing queries: ResultSet
 // When querying a database, the method returns the records that match the query, as a ResultSet instance.
 // The results can be retrieved by calling the .getResultSet method.
 // It's then possible to loop through the results.
 //
-// If you reuse a statement object to do a query, any ResultsSet associated with that statement object
+// When retrieving data with JDBC, this will return a boolean, which is:
+// - true, if the executed statement returns an instance of the results set class
+// - false, if it returns an update count or no results
+//
+// To execute a query, call an execute method from Statement:
+// 1. execute:
+// To be used if the query could return one or more ResultSet objects.
+// Returns true if the first object that it returns is a ResultSet object.
+// Retrieve the returned ResultSet objects by repeatedly calling Statement.getResultSet.
+// 2. executeQuery:
+// Returns one ResultSet object.
+// 3. executeUpdate:
+// Returns an integer representing the number of rows affected by the SQL statement.
+// Use this method when using INSERT, DELETE, or UPDATE SQL statements.
+//
+// When re-using a statement object to do a query, any ResultsSet associated with that statement object
 // is closed and a new one is created for the new query.
 // So when working with several results set queries at the same time,
 // it's imperative to use a different statement instance for each query.
 // It's possible to reuse a statement instance.. but only when finishing processing one query, before executing the next.
 // A statement object can ultimately only have on active ResultSet associated with it.
-//
-// Every ResultsSet has 'a cursor'.
-// When a ResultSet is created, it's cursor is positioned before the first record.
+
+// Processing ResultSet objects
+// Every ResultsSet has a 'cursor', which is used to access the ResultSet object.
+// When a ResultSet is created, its cursor is positioned before the first record.
 // The first time calling ResultSet, the cursor will be moved to the first record.
-// When calling it again, it will move to the second record in the ResultSet.
+// When calling it again (with ResultSet.next), it will move to the second record in the ResultSet.
 // When there are no more records,the next method record will return false.
+
+// Closing connections
+// When finished using a Connection, Statement, or ResultSet object, it close method must be called.
+// To immediately release the resources it's using.
+// Alternatively, use a try-with-resources statement to automatically close Connection, Statement, and ResultSet objects.
+// Regardless of whether an SQLException has been thrown.
+// JDBC throws an SQLException when it encounters an error during an interaction with a data source.
+
+// Establishing a connection
+// Typically, a JDBC application connects to a target data source using one of two classes:
 //
-// ResultSet is a resource and should be closed!
+// 1. DriverManager
+//    Fully implemented class that connects an application to a data source. The data source is specified by a database URL. Easiest to use.
+//    Connecting to a DBMS with DriverManager requires calling the method DriverManager.getConnection.
+//    This method requires a database URL (varying depending on the used DBMS). For example:
+//    - MySQL: jdbc:mysql://localhost:3306/ -- localhost being the name of the db hosting server and 3306 it's port number
+//    - SQLite: jdbc:sqlite:C:\\databases\\dbname.db -- with a local path name and database filename
+//    The method returns a Connection object, which represents a connection with the DBMS or a specific database.
+//    The database can be queried through this object, using the .getResultSet method.
+//
+// 2. DataSource
+//    Interface. Preferred means of getting a connection to a data source.
+//    DataSource objects can provide connection pooling and distributed transactions.
+//    This functionality is essential for enterprise database computing and is integral to Enterprise JavaBeans (EJB).
+//    The work required to deploy the classes (with a tool like Apache Tomcat) that make these operations possible,
+//    varies with the type of DataSource object that's deployed.
+//
+// The database connection URL is a string that the DBMS JDBC driver uses to connect to a database.
+// It can contain information such as where to search for the database, the name of the database to connect to,
+// and configuration properties. The exact syntax of a database connection URL is specified by the DBMS.
 
 public class Main {
 

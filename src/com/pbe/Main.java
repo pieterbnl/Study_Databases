@@ -8,6 +8,8 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) {
+
+        // Create a datasource object
         Datasource datasource = new Datasource();
         if(!datasource.open()) {
             System.out.println("Can't open datasource");
@@ -15,7 +17,8 @@ public class Main {
         }
 
         // Create list with artists via datasource queryArtists() method
-        List<Artist> artists = datasource.queryArtists();
+        // And pass a default sorting direction
+        List<Artist> artists = datasource.queryArtists(Datasource.ORDER_BY_ASC);
 
         // Check if there are any artists
         if(artists == null) {
@@ -26,6 +29,14 @@ public class Main {
                 System.out.println("ID = " + artist.getId() + ", Name = " + artist.getName());
             }
         }
+
+        List<String> albumsForArtist =
+                datasource.queryAlbumsForArtist("Iron Maiden", Datasource.ORDER_BY_ASC);
+
+        for(String album : albumsForArtist) {
+            System.out.println(album);
+        }
+
         datasource.close();
     }
 }
