@@ -103,9 +103,20 @@ public class Datasource {
             TABLE_ALBUMS + '.' + COLUMN_ALBUM_NAME + ", " +
             TABLE_SONGS + '.' + COLUMN_SONG_TRACK;
 
+    // Another query - now using a placeholder character ? which substitutes a single value
+    // The placeholder can be replaced every time when needing to create a query
+    // SELECT name, album, track FROM artist_list WHERE title = ?
+    public static final String QUERY_VIEW_SONG_INFO_PREP = "SELECT " + COLUMN_ARTIST_NAME + ", " +
+            COLUMN_SONG_ALBUM + ", " + COLUMN_SONG_TRACK + " FROM " + TABLE_ARTIST_SONG_VIEW +
+            " WHERE " + COLUMN_SONG_TITLE + " = ?";
+
+
     // Set a Connection declaration
     // Connection is a statement object for sending SQL statements to the database
     private Connection conn;
+
+    // Adding a prepared statement variable
+    private PreparedStatement querySongInfoView;
 
     // ******
     // Open database connection
@@ -114,6 +125,11 @@ public class Datasource {
         try {
             // Establish a connection with the database via DriverManager's getConnection()
             conn = DriverManager.getConnection(CONNECTION_STRING);
+
+            // Creating an instance of prepared statement,
+            // and pass it the prepared SQL query statement (containing a placeholder) that needs to be executed
+            querySongInfoView = conn.prepareStatement(QUERY_VIEW_SONG_INFO_PREP);
+
             return true;
         } catch (SQLException e) {
             System.out.println("Couldn't connect to database: " + e.getMessage());
@@ -127,7 +143,10 @@ public class Datasource {
     // ******
     public void close() {
         try {
-            if(conn != null) {
+            if(querySongInfoView != null) {
+                querySongInfoView.close();
+            }
+            if(conn != null) { // close connection as last
                 conn.close();
             }
         } catch (SQLException e) {
@@ -341,14 +360,10 @@ public class Datasource {
     }
 
     public List<SongArtist> querySongInfoView(String title) {
-        StringBuilder sb = new StringBuilder(QUERY_VIEW_SONG_INFO);
-        sb.append(title);
-        sb.append("\"");
 
-        System.out.println(sb.toString());
-
-        try (Statement statement = conn.createStatement();
-             ResultSet results = statement.executeQuery(sb.toString())) {
+        try {
+            querySongInfoView.setString(1, title);
+            ResultSet results = querySongInfoView.executeQuery();
 
             List<SongArtist> songArtists = new ArrayList<>();
             while (results.next()) {
@@ -359,11 +374,11 @@ public class Datasource {
                 songArtists.add(songArtist);
             }
             return songArtists;
+
         } catch (SQLException e) {
             System.out.println("Query failed " + e.getMessage());
             e.printStackTrace();
             return null;
         }
     }
-
 }

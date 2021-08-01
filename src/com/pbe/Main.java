@@ -5,6 +5,7 @@ import com.pbe.model.Datasource;
 import com.pbe.model.SongArtist;
 
 import java.util.List;
+import java.util.Scanner;
 
 public class Main {
 
@@ -62,7 +63,12 @@ public class Main {
         // Working with a view
         datasource.createViewForSongArtists();
 
-        songArtists = datasource.querySongInfoView("Go Your Own Way");
+        // Accept user input to experiment with SQL injection attack
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter a song title: ");
+        String title = scanner.nextLine();
+
+        songArtists = datasource.querySongInfoView(title);
         if(songArtists.isEmpty()) {
             System.out.println("Couldn't find the artist for the song");
             return;

@@ -399,6 +399,15 @@ import java.sql.*;
 // It can contain information such as where to search for the database, the name of the database to connect to,
 // and configuration properties. The exact syntax of a database connection URL is specified by the DBMS.
 
+// SQL injection attacks
+// To protect against SQL injection attacks (as in the examples used in this project),
+// instead of building up query strings and using the statement class to execute them,
+// it's better to use the prepared statement class.
+// Prepared statements can be protected against SQL injection attacks
+// because when using them, user input is not concatenated into the query.
+// When using a prepared statement, the values being substituted are treated as literal values
+// I.e.: nothing within the value is treated as SQL.
+
 public class Main {
 
     // Set constants for the database
